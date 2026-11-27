@@ -1,0 +1,101 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // USER PROFILES
+    match /users/{userId} {
+      // Users can read their own profile.
+      allow read: if request.auth != null
+        && request.auth.uid == userId;
+
+      // Users can create their own profile, but cannot assign
+      // themselves privileged roles.
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && !request.resource.data.keys().hasAny([
+          'role',
+          'isAdmin',
+          'admin',
+          'adminEmail',
+          'permissions'
+        ]);
+
+      // Users can update their own profile without changing
+      // protected privilege fields.
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        && !request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasAny([
+            'role',
+            'isAdmin',
+            'admin',
+            'adminEmail',
+            'permissions'
+          ]);
+
+      // Profile deletion must go through a trusted server route.
+      allow delete: if false;
+
+      // USER CART ITEMS
+      match /cart/{cartItemId} {
+        allow read, create, update, delete: if request.auth != null
+          && request.auth.uid == userId;
+      }
+    }
+
+    // GAMES
+    match /games/{gameId} {
+      // Anyone can browse the marketplace.
+      allow read: if true;
+
+      // Game changes must go through a server-side admin API.
+      allow create, update, delete: if false;
+    }
+
+    // ORDERS
+    match /orders/{orderId} {
+      // Customers can read only their own orders.
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+
+      // Order creation and all order mutations must go through
+      // trusted server routes using Firebase Admin SDK.
+      allow create, update, delete: if false;
+    }
+
+    // PAYMENT REFERENCE CLAIMS
+    match /paymentUtrClaims/{claimId} {
+      // Prevent clients from reading, creating, modifying,
+      // or deleting duplicate-payment tracking records.
+      allow read, write: if false;
+    }
+
+    // PURCHASE OWNERSHIP RECORDS
+    match /games_purchased/{userId} {
+      // Customers may view their own ownership record.
+      allow read: if request.auth != null
+        && request.auth.uid == userId;
+
+      // Only trusted server routes may grant or revoke ownership.
+      allow create, update, delete: if false;
+    }
+
+    // PUBLIC CONFIGURATION
+    match /config/{configId} {
+      // Public storefront configuration.
+      allow read: if true;
+
+      // Configuration changes must go through a server-side
+      // administrator-authorized API.
+      allow create, update, delete: if false;
+    }
+
+    // DENY ACCESS TO UNMATCHED DOCUMENTS
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
