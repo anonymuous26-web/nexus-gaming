@@ -2,14 +2,9 @@ import express from "express";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "../../lib/firebaseAdmin.js";
 import { requireAdmin } from "../../lib/adminAuthorization.js";
+import { serializeFirestoreValue, toMillis } from "../../lib/serialize.js";
 
 const router = express.Router();
-
-function millis(value) {
-  if (value?.toMillis) return value.toMillis();
-  if (value?.seconds) return value.seconds * 1000;
-  return 0;
-}
 
 // GET /api/admin/payment-submissions
 router.get("/", async (req, res) => {
@@ -21,15 +16,16 @@ router.get("/", async (req, res) => {
       .collection("orders")
       .where("paymentStatus", "==", "awaiting_verification")
       .get();
-    const orders = snap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    orders.sort(
-      (a, b) =>
-        millis(a.paymentSubmission?.submittedAt) -
-        millis(b.paymentSubmission?.submittedAt)
-    );
+    const orders = snap.docs
+      .map((doc) => ({
+        doc,
+        submittedAtMillis: toMillis(doc.data()?.paymentSubmission?.submittedAt),
+      }))
+      .sort((a, b) => a.submittedAtMillis - b.submittedAtMillis)
+      .map(({ doc }) => ({
+        id: doc.id,
+        ...serializeFirestoreValue(doc.data()),
+      }));
     return res.json({ orders });
   } catch (error) {
     console.error("Admin payment queue failed:", error);

@@ -498,7 +498,10 @@ export default function AdminDashboard() {
               Recent orders are unavailable until the dashboard API succeeds.
             </div>
           ) : (
-            <RecentOrders orders={recentOrders} />
+            <RecentOrders
+              orders={recentOrders}
+              onOrderUpdated={refreshDashboard}
+            />
           )}
         </div>
       </section>

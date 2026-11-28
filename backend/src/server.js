@@ -13,6 +13,7 @@ import adminGamesRouter from "./routes/admin/games.js";
 import adminMarqueeRouter from "./routes/admin/marquee.js";
 import adminCouponsRouter from "./routes/admin/coupons.js";
 import adminCloudinaryRouter from "./routes/admin/cloudinary.js";
+import adminOrdersRouter from "./routes/admin/orders.js";
 import adminPaymentSubmissionsRouter from "./routes/admin/paymentSubmissions.js";
 
 const app = express();
@@ -76,6 +77,7 @@ app.use("/api/admin/games", adminGamesRouter);
 app.use("/api/admin/marquee", adminMarqueeRouter);
 app.use("/api/admin/coupons", adminCouponsRouter);
 app.use("/api/admin/cloudinary-signature", adminCloudinaryRouter);
+app.use("/api/admin/orders", adminOrdersRouter);
 
 app.use((_req, res) => {
   res.status(404).json({ error: "API route not found." });

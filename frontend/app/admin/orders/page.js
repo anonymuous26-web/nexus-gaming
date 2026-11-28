@@ -24,6 +24,10 @@ function formatDate(value) {
     date = value.toDate();
   } else if (typeof value.seconds === "number") {
     date = new Date(value.seconds * 1000);
+  } else if (typeof value._seconds === "number") {
+    date = new Date(value._seconds * 1000);
+  } else if (typeof value === "number") {
+    date = new Date(value < 1e12 ? value * 1000 : value);
   } else {
     date = new Date(value);
   }

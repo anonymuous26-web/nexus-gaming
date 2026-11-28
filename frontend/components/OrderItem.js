@@ -20,6 +20,10 @@ function formatDate(value) {
     date = value.toDate();
   } else if (typeof value.seconds === "number") {
     date = new Date(value.seconds * 1000);
+  } else if (typeof value._seconds === "number") {
+    date = new Date(value._seconds * 1000);
+  } else if (typeof value === "number") {
+    date = new Date(value < 1e12 ? value * 1000 : value);
   } else {
     date = new Date(value);
   }
@@ -260,6 +264,15 @@ export default function OrderItem({ order = {} }) {
             </span>
           </div>
 
+          {order.paymentSubmission?.utr && (
+            <div className="flex flex-wrap justify-between gap-2">
+              <span className="text-secondary">Submitted UTR</span>
+              <span className="break-all text-right font-mono">
+                {order.paymentSubmission.utr}
+              </span>
+            </div>
+          )}
+
           {order.promoCodeUsed && (
             <div className="flex flex-wrap justify-between gap-2">
               <span className="text-secondary">Promo code</span>
@@ -304,6 +317,11 @@ export default function OrderItem({ order = {} }) {
       ) : order.paymentStatus === "rejected" ? (
         <div className="rounded-lg bg-red-500/10 p-4 text-sm text-red-300">
           <p className="font-semibold">Payment needs attention</p>
+          {(order.paymentSubmission?.reviewNote || order.reviewNote) && (
+            <p className="mt-1">
+              Reason: {order.paymentSubmission?.reviewNote || order.reviewNote}
+            </p>
+          )}
           <p className="mt-1">
             Review the rejection message if available. If you believe the
             transaction was successful, contact support before trying again.

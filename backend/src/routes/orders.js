@@ -3,6 +3,7 @@ import express from "express";
 import multer from "multer";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { adminDb, adminStorage, verifyRequestUser } from "../lib/firebaseAdmin.js";
+import { serializeFirestoreValue, toMillis } from "../lib/serialize.js";
 
 const router = express.Router();
 
@@ -75,13 +76,6 @@ function getExpiryMillis(value) {
   }
 
   return NaN;
-}
-
-function millis(value) {
-  if (value?.toMillis) return value.toMillis();
-  if (value?.seconds) return value.seconds * 1000;
-  const n = new Date(value || 0).getTime();
-  return Number.isFinite(n) ? n : 0;
 }
 
 function validateCartItems(items) {
@@ -401,8 +395,16 @@ router.get("/mine", async (req, res) => {
       .where("userId", "==", user.uid)
       .get();
 
-    const orders = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    orders.sort((a, b) => millis(b.createdAt) - millis(a.createdAt));
+    const orders = snap.docs
+      .map((doc) => ({
+        doc,
+        createdAtMillis: toMillis(doc.data()?.createdAt),
+      }))
+      .sort((a, b) => b.createdAtMillis - a.createdAtMillis)
+      .map(({ doc }) => ({
+        id: doc.id,
+        ...serializeFirestoreValue(doc.data()),
+      }));
 
     return res.json({ orders });
   } catch (error) {
